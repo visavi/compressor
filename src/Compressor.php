@@ -64,7 +64,7 @@ class Compressor {
 				$gzip_file_out = strlen(self::compress_output_deflate($contents));
 			}
 
-			return round(100 - 100 / ($gzip_file / $gzip_file_out), 1);
+			return $gzip_file > $gzip_file_out ? round(100 - 100 / ($gzip_file / $gzip_file_out), 1) : 0;
 		}
 	}
 
