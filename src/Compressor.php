@@ -1,9 +1,9 @@
 <?php
 /**
- * Класс компрессии страниц
- * Сжимает страницы на лету и выводит результат сжатия в процентах
- * Имеется проверка на установленную библиотеку gzip или включенную директиву zlib.output_compression
- * Также проверяется поддержка сжатия браузером у посетителей
+ * Class Compression pages
+ * Compress the page on the fly and outputs the result as a percentage of compression
+ * There is a check on the installed library gzip or included directive zlib.output_compression
+ * Compression support also checked the visitors browser
  *
  * @license Code and contributions have MIT License
  * @link    http://visavi.net
@@ -16,16 +16,15 @@ namespace Visavi;
 class Compressor {
 
 	/**
-	 * Уровень сжатия (0-9)
+	 * Compression level (0-9)
 	 * @var integer
 	 */
-	public $level;
+	public static $level = 5;
 
 	/**
-	 * Установка заголовков и сжатие на лету
-	 * @return string сжатые данные
+	 * Setting headers and compression on the fly
 	 */
-	public static function start($level = 5)
+	public static function start()
 	{
 		if (extension_loaded('zlib') &&
 			ini_get('zlib.output_compression') != 'On' &&
@@ -33,23 +32,21 @@ class Compressor {
 			ini_get('output_handler') != 'zlib.output_compression'
 		) {
 			$check_compress = self::check_compress();
-			if ($check_compress == 'gzip')
-			{
+
+			if ($check_compress == 'gzip') {
 				header("Content-Encoding: gzip");
-				ob_start(["Compressor", "compress_output_gzip"]);
+				ob_start(['self', 'compress_output_gzip']);
 			}
-			elseif ($check_compress == 'deflate')
-			{
+			elseif ($check_compress == 'deflate') {
 				header("Content-Encoding: deflate");
-				ob_start(["Compressor", "compress_output_deflate"]);
+				ob_start(['self', 'compress_output_deflate']);
 			}
 		}
 	}
 
-	/* Вывод результатов сжатия */
 	/**
-	 * Вывод результатов сжатия
-	 * @return float результат сжатия в процентах
+	 * Output of compression
+	 * @return float result of the compression percentage
 	 */
 	public static function result()
 	{
@@ -67,17 +64,17 @@ class Compressor {
 				$gzip_file_out = strlen(self::compress_output_deflate($contents));
 			}
 
-			return $compression = round(100 - (100 / ($gzip_file / $gzip_file_out)), 1);
+			return round(100 - 100 / ($gzip_file / $gzip_file_out), 1);
 		}
 	}
 
 	/**
-	 * Проверка поддерживает ли браузер сжатие
-	 * @return boolean поддерживается ли сжатие
+	 * Check if the browser supports compression
+	 * @return boolean compression is supported
 	 */
 	protected static function check_compress()
 	{
-		// Чтение заголовков
+		// Reading the headlines
 		if (isset($_SERVER['HTTP_ACCEPT_ENCODING'])) {
 			$gzencode = $_SERVER['HTTP_ACCEPT_ENCODING'];
 		}
@@ -88,7 +85,7 @@ class Compressor {
 			$gzencode = false;
 		}
 
-		// Поиск поддержки сжатия в заголовках
+		// Search support compression titles
 		if (strpos($gzencode, 'gzip') !== false) {
 			$support = 'gzip';
 		}
@@ -102,15 +99,23 @@ class Compressor {
 		return $support;
 	}
 
-	/* Сжатие gzencode */
-	public static function compress_output_gzip($output)
+	/**
+	 * Compression gzencode
+	 * @param  string $output Data compression.
+	 * @return mixed          The compressed string or false if an error occurs
+	 */
+	protected static function compress_output_gzip($output)
 	{
-		return gzencode($output, 5);
+		return gzencode($output, self::$level);
 	}
 
-	/* Сжатие gzdeflate */
-	public static function compress_output_deflate($output)
+	/**
+	 * Compression gzdeflate
+	 * @param  [type] $output [description]
+	 * @return mixed          The compressed string or false if an error occurs
+	 */
+	protected static function compress_output_deflate($output)
 	{
-		return gzdeflate($output, 5);
+		return gzdeflate($output, self::$level);
 	}
 }
