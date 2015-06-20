@@ -31,15 +31,19 @@ class Compressor {
 			ini_get('output_handler') != 'ob_gzhandler' &&
 			ini_get('output_handler') != 'zlib.output_compression'
 		) {
-			$check_compress = self::check_compress();
+			$check_compress = self::checkCompress();
 
 			if ($check_compress == 'gzip') {
 				header("Content-Encoding: gzip");
-				ob_start(['self', 'compress_output_gzip']);
+				ob_start(['self', 'compressGzip']);
+			}
+			elseif ($check_compress == 'x-gzip') {
+				header("Content-Encoding: x-gzip");
+				ob_start(['self', 'compressXGzip']);
 			}
 			elseif ($check_compress == 'deflate') {
 				header("Content-Encoding: deflate");
-				ob_start(['self', 'compress_output_deflate']);
+				ob_start(['self', 'compressDeflate']);
 			}
 		}
 	}
@@ -50,21 +54,21 @@ class Compressor {
 	 */
 	public static function result()
 	{
-		$check_compress = self::check_compress();
+		$check_compress = self::checkCompress();
 
 		if ($check_compress) {
 
 			$contents = ob_get_contents();
-			$gzip_file = strlen($contents);
+			$size = strlen($contents);
 
-			if ($check_compress == 'gzip') {
-				$gzip_file_out = strlen(self::compress_output_gzip($contents));
-			}
-			elseif ($check_compress == 'deflate') {
-				$gzip_file_out = strlen(self::compress_output_deflate($contents));
-			}
+			if ($check_compress == 'gzip')
+				$size_compress = strlen(self::compressGzip($contents));
+			elseif ($check_compress == 'x-gzip')
+				$size_compress = strlen(self::compressXGzip($contents));
+			elseif ($check_compress == 'deflate')
+				$size_compress = strlen(self::compressDeflate($contents));
 
-			return $gzip_file > $gzip_file_out ? round(100 - 100 / ($gzip_file / $gzip_file_out), 1) : 0;
+			return $size > $size_compress ? round(100 - 100 / ($size / $size_compress), 1) : 0;
 		}
 	}
 
@@ -72,29 +76,25 @@ class Compressor {
 	 * Check if the browser supports compression
 	 * @return boolean compression is supported
 	 */
-	protected static function check_compress()
+	protected static function checkCompress()
 	{
 		// Reading the headlines
-		if (isset($_SERVER['HTTP_ACCEPT_ENCODING'])) {
-			$gzencode = $_SERVER['HTTP_ACCEPT_ENCODING'];
-		}
-		elseif (isset($_SERVER['HTTP_TE'])) {
-			$gzencode = $_SERVER['HTTP_TE'];
-		}
-		else {
-			$gzencode = false;
-		}
+		if (isset($_SERVER['HTTP_ACCEPT_ENCODING']))
+			$encoding = $_SERVER['HTTP_ACCEPT_ENCODING'];
+		elseif (isset($_SERVER['HTTP_TE']))
+			$encoding = $_SERVER['HTTP_TE'];
+		else
+			$encoding = false;
 
 		// Search support compression titles
-		if (strpos($gzencode, 'gzip') !== false) {
+		if (strpos($encoding, 'gzip') !== false)
 			$support = 'gzip';
-		}
-		elseif (strpos($gzencode, 'deflate') !== false) {
+		elseif(strpos($encoding, 'x-gzip') !== false)
+        	$encoding = 'x-gzip';
+		elseif (strpos($encoding, 'deflate') !== false)
 			$support = 'deflate';
-		}
-		else {
+		else
 			$support = false;
-		}
 
 		return $support;
 	}
@@ -104,9 +104,19 @@ class Compressor {
 	 * @param  string $output Data compression.
 	 * @return mixed          The compressed string or false if an error occurs
 	 */
-	protected static function compress_output_gzip($output)
+	protected static function compressGzip($output)
 	{
 		return gzencode($output, self::$level);
+	}
+
+	/**
+	 * Compression gzcompress
+	 * @param  string $output Data compression.
+	 * @return mixed          The compressed string or false if an error occurs
+	 */
+	protected static function compressXGzip($output)
+	{
+		return gzcompress($output, self::$level, ZLIB_ENCODING_GZIP);
 	}
 
 	/**
@@ -114,7 +124,7 @@ class Compressor {
 	 * @param  [type] $output [description]
 	 * @return mixed          The compressed string or false if an error occurs
 	 */
-	protected static function compress_output_deflate($output)
+	protected static function compressDeflate($output)
 	{
 		return gzdeflate($output, self::$level);
 	}

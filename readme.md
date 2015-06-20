@@ -9,7 +9,9 @@ Basic useful feature list:
 
  * Compress the page on the fly and outputs the result as a percentage of compression
  * There is a check on the installed library gzip or included directive zlib.output_compression
+ * Specifies the gzip compression is turned on by default on the server
  * Compression support also checked the visitors browser
+ * 3 compression method (gzip, x-gzip, deflate), depending on which method of operating the user's browser
 
 ```php
 <?php
