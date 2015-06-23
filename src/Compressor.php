@@ -89,7 +89,7 @@ class Compressor {
 		// Search support compression titles
 		if (strpos($encoding, 'gzip') !== false)
 			$support = 'gzip';
-		elseif(strpos($encoding, 'x-gzip') !== false)
+		elseif (strpos($encoding, 'x-gzip') !== false)
 			$support = 'x-gzip';
 		elseif (strpos($encoding, 'deflate') !== false)
 			$support = 'deflate';
